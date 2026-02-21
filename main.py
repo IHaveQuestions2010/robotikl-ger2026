@@ -6,20 +6,39 @@ import runloop
 canStart = False
 motor_pair.pair(motor_pair.PAIR_1, port.F, port.D)
 
+
 # CONFIG
 reflectivnessTarget = 50
 sensorPort = port.C
 sensorMotorPort = port.A
 pair = motor_pair.PAIR_1
 
-async def followLine():
+
+
+async def sensorFollowLine():
+    integral = 0
+    last_error = 0
+
+    Kp = 1.8
+    Ki = 0.01
+    Kd = 0.8
     while canStart == False:
         await runloop.sleep_ms(50)
     while True:
-        # https://issssse.github.io/spikeguide/#lls-help-python-examples-p-control
+        # https://issssse.github.io/spikeguide/#lls-help-python-examples-pid-control
         reflectivnessReading = color_sensor.reflection(sensorPort)
         reflectivnessError = reflectivnessTarget - reflectivnessReading
-        steering = int(reflectivnessError * 1.8)
+
+        P = Kp * reflectivnessError
+
+        integral += reflectivnessError
+        I = Ki * integral
+
+        derivative  = reflectivnessError - last_error
+        D = Kd * derivative
+
+        last_error = reflectivnessError
+        steering = int(P + I + D)
         motor.run_for_degrees(sensorMotorPort, -steering, 90)
 
         await runloop.sleep_ms(50)
