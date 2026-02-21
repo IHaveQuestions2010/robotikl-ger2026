@@ -1,14 +1,16 @@
 from hub import port
-import motor, motor_pair, color_sensor
+import motor, motor_pair, color_sensor,color
 import runloop
 
+# INIT
 canStart = False
+motor_pair.pair(motor_pair.PAIR_1, port.F, port.D)
 
 # CONFIG
-
 reflectivnessTarget = 50
 sensorPort = port.C
 sensorMotorPort = port.A
+pair = motor_pair.PAIR_1
 
 async def followLine():
     while canStart == False:
@@ -28,10 +30,15 @@ async def main():
     global canStart
     canStart = True
     while True:
-        # When sensorAngle increases the robot will turn more cancelling it out so it follows the line
-        sensorAngle = motor.absolute_position(sensorMotorPort)
-        motor_pair.move(motor_pair.PAIR_1, int(2.5*sensorAngle), velocity=-120)
+        if color_sensor.color(sensorPort) == color.RED:
+            print("WIN")
+            break
+        elif color_sensor.reflection(sensorPort) <= 90:
+            # When sensorAngle increases the robot will turn more cancelling it out so it follows the line
+            sensorAngle = motor.absolute_position(sensorMotorPort)
+            motor_pair.move(pair, int(2.5*sensorAngle), velocity=-120)
+        else:
+            motor_pair.stop(pair)
         await runloop.sleep_ms(50)
 
-motor_pair.pair(motor_pair.PAIR_1, port.F, port.D)
 runloop.run(main(), followLine())
